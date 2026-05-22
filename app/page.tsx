@@ -13,7 +13,7 @@ import Contact from '@/components/sections/Contact'
 import LoadingScreen from '@/components/ui/LoadingScreen'
 
 gsap.registerPlugin(ScrollTrigger)
-
+opac
 const Scene = dynamic(() => import('@/components/three/Scene'), {
   ssr: false,
   loading: () => null,
@@ -97,7 +97,7 @@ export default function Home() {
     <>
       <LoadingScreen onComplete={handleLoadComplete} />
 
-      <div ref={mainRef} style={{ opacity: 0 }}>
+      <div ref={mainRef} style={{ opacity: 1 }}>
         {/* Custom cursor */}
         <div
           ref={cursorRef}

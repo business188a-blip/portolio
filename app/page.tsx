@@ -1,7 +1,7 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import Navbar from '@/components/ui/Navbar'
@@ -10,6 +10,7 @@ import About from '@/components/sections/About'
 import Projects from '@/components/sections/Projects'
 import Experience from '@/components/sections/Experience'
 import Contact from '@/components/sections/Contact'
+import LoadingScreen from '@/components/ui/LoadingScreen'
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -19,11 +20,26 @@ const Scene = dynamic(() => import('@/components/three/Scene'), {
 })
 
 export default function Home() {
+  const [loaded, setLoaded] = useState(false)
   const lenisRef = useRef<any>(null)
   const cursorRef = useRef<HTMLDivElement>(null)
   const cursorDotRef = useRef<HTMLDivElement>(null)
+  const mainRef = useRef<HTMLDivElement>(null)
+
+  const handleLoadComplete = () => {
+    setLoaded(true)
+    // Reveal main content
+    if (mainRef.current) {
+      gsap.fromTo(mainRef.current,
+        { opacity: 0, y: 20 },
+        { opacity: 1, y: 0, duration: 1, ease: 'power3.out' }
+      )
+    }
+  }
 
   useEffect(() => {
+    if (!loaded) return
+
     // Lenis + GSAP sync
     const initLenis = async () => {
       const Lenis = (await import('lenis')).default
@@ -75,59 +91,54 @@ export default function Home() {
       lenisRef.current?.destroy()
       window.removeEventListener('mousemove', onMove)
     }
-  }, [])
+  }, [loaded])
 
   return (
-    <main>
-      {/* Custom cursor */}
-      <div
-        ref={cursorRef}
-        className="fixed top-0 left-0 w-8 h-8 rounded-full pointer-events-none z-[9999] hidden md:block"
-        style={{
-          border: '1px solid rgba(34,211,238,0.5)',
-          mixBlendMode: 'difference',
-        }}
-      />
-      <div
-        ref={cursorDotRef}
-        className="fixed top-0 left-0 w-2 h-2 rounded-full pointer-events-none z-[9999] hidden md:block"
-        style={{ background: '#22d3ee' }}
-      />
+    <>
+      <LoadingScreen onComplete={handleLoadComplete} />
 
-      {/* Floating light blobs — slow drifting background lights */}
-      <div className="fixed inset-0 z-[1] pointer-events-none overflow-hidden">
+      <div ref={mainRef} style={{ opacity: 0 }}>
+        {/* Custom cursor */}
         <div
-          className="blob w-[500px] h-[500px] top-[-100px] left-[-100px]"
-          style={{ background: 'rgba(34,211,238,0.04)' }}
+          ref={cursorRef}
+          className="fixed top-0 left-0 w-8 h-8 rounded-full pointer-events-none z-[9999] hidden md:block"
+          style={{ border: '1px solid rgba(34,211,238,0.5)', mixBlendMode: 'difference' }}
         />
         <div
-          className="blob blob-2 w-[400px] h-[400px] top-[30%] right-[-80px]"
-          style={{ background: 'rgba(167,139,250,0.05)' }}
+          ref={cursorDotRef}
+          className="fixed top-0 left-0 w-2 h-2 rounded-full pointer-events-none z-[9999] hidden md:block"
+          style={{ background: '#22d3ee' }}
         />
-        <div
-          className="blob blob-3 w-[600px] h-[600px] bottom-[-150px] left-[30%]"
-          style={{ background: 'rgba(34,211,238,0.03)' }}
-        />
-      </div>
 
-      {/* 3D World */}
-      <div className="canvas-container" style={{ pointerEvents: 'none' }}>
-        <Scene />
-      </div>
+        {/* Floating light blobs */}
+        <div className="fixed inset-0 z-[1] pointer-events-none overflow-hidden">
+          <div className="blob w-[500px] h-[500px] top-[-100px] left-[-100px]"
+            style={{ background: 'rgba(34,211,238,0.04)' }} />
+          <div className="blob blob-2 w-[400px] h-[400px] top-[30%] right-[-80px]"
+            style={{ background: 'rgba(167,139,250,0.05)' }} />
+          <div className="blob blob-3 w-[600px] h-[600px] bottom-[-150px] left-[30%]"
+            style={{ background: 'rgba(34,211,238,0.03)' }} />
+        </div>
 
-      {/* UI Layer */}
-      <div className="content-layer">
-        <Navbar />
-        <Hero />
-        <div className="section-divider" />
-        <About />
-        <div className="section-divider" />
-        <Projects />
-        <div className="section-divider" />
-        <Experience />
-        <div className="section-divider" />
-        <Contact />
+        {/* 3D World */}
+        <div className="canvas-container" style={{ pointerEvents: 'none' }}>
+          <Scene />
+        </div>
+
+        {/* UI Layer */}
+        <div className="content-layer">
+          <Navbar />
+          <Hero />
+          <div className="section-divider" />
+          <About />
+          <div className="section-divider" />
+          <Projects />
+          <div className="section-divider" />
+          <Experience />
+          <div className="section-divider" />
+          <Contact />
+        </div>
       </div>
-    </main>
+    </>
   )
 }

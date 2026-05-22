@@ -20,40 +20,97 @@ const Scene = dynamic(() => import('@/components/three/Scene'), {
 
 export default function Home() {
   const lenisRef = useRef<any>(null)
+  const cursorRef = useRef<HTMLDivElement>(null)
+  const cursorDotRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
+    // Lenis + GSAP sync
     const initLenis = async () => {
       const Lenis = (await import('lenis')).default
-
       const lenis = new Lenis({
         duration: 1.4,
         easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
         touchMultiplier: 2,
       })
-
       lenisRef.current = lenis
-
-      // Sync Lenis with GSAP ScrollTrigger
       lenis.on('scroll', ScrollTrigger.update)
-
-      gsap.ticker.add((time) => {
-        lenis.raf(time * 1000)
-      })
-
+      gsap.ticker.add((time) => { lenis.raf(time * 1000) })
       gsap.ticker.lagSmoothing(0)
     }
-
     initLenis()
+
+    // Custom cursor
+    const cursor = cursorRef.current
+    const dot = cursorDotRef.current
+    if (!cursor || !dot) return
+
+    let mouseX = 0, mouseY = 0
+    let curX = 0, curY = 0
+
+    const onMove = (e: MouseEvent) => {
+      mouseX = e.clientX
+      mouseY = e.clientY
+      gsap.to(dot, { x: mouseX - 4, y: mouseY - 4, duration: 0.1 })
+    }
+
+    const animate = () => {
+      curX += (mouseX - curX) * 0.12
+      curY += (mouseY - curY) * 0.12
+      gsap.set(cursor, { x: curX - 16, y: curY - 16 })
+      requestAnimationFrame(animate)
+    }
+
+    const onEnterLink = () => gsap.to(cursor, { scale: 2, opacity: 0.6, duration: 0.3 })
+    const onLeaveLink = () => gsap.to(cursor, { scale: 1, opacity: 1, duration: 0.3 })
+
+    window.addEventListener('mousemove', onMove)
+    document.querySelectorAll('a, button').forEach(el => {
+      el.addEventListener('mouseenter', onEnterLink)
+      el.addEventListener('mouseleave', onLeaveLink)
+    })
+
+    animate()
 
     return () => {
       lenisRef.current?.destroy()
-      gsap.ticker.remove(() => {})
+      window.removeEventListener('mousemove', onMove)
     }
   }, [])
 
   return (
     <main>
-      {/* 3D World — fixed behind everything */}
+      {/* Custom cursor */}
+      <div
+        ref={cursorRef}
+        className="fixed top-0 left-0 w-8 h-8 rounded-full pointer-events-none z-[9999] hidden md:block"
+        style={{
+          border: '1px solid rgba(34,211,238,0.5)',
+          mixBlendMode: 'difference',
+        }}
+      />
+      <div
+        ref={cursorDotRef}
+        className="fixed top-0 left-0 w-2 h-2 rounded-full pointer-events-none z-[9999] hidden md:block"
+        style={{ background: '#22d3ee' }}
+      />
+
+      {/* Floating light blobs — slow drifting background lights */}
+      <div className="fixed inset-0 z-[1] pointer-events-none overflow-hidden">
+        <div
+          className="blob w-[500px] h-[500px] top-[-100px] left-[-100px]"
+          style={{ background: 'rgba(34,211,238,0.04)' }}
+        />
+        <div
+          className="blob blob-2 w-[400px] h-[400px] top-[30%] right-[-80px]"
+          style={{ background: 'rgba(167,139,250,0.05)' }}
+        />
+        <div
+          className="blob blob-3 w-[600px] h-[600px] bottom-[-150px] left-[30%]"
+          style={{ background: 'rgba(34,211,238,0.03)' }}
+        />
+      </div>
+
+      {/* 3D World */}
       <div className="canvas-container" style={{ pointerEvents: 'none' }}>
         <Scene />
       </div>
@@ -62,9 +119,13 @@ export default function Home() {
       <div className="content-layer">
         <Navbar />
         <Hero />
+        <div className="section-divider" />
         <About />
+        <div className="section-divider" />
         <Projects />
+        <div className="section-divider" />
         <Experience />
+        <div className="section-divider" />
         <Contact />
       </div>
     </main>
